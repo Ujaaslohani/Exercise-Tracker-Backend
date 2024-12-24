@@ -68,4 +68,19 @@ const getDailyCalories = async (req, res) => {
   }
 };
 
-module.exports = { addExercise, removeExercise, getDailyCalories };
+const deleteExercise = async (req, res) => {
+    const { userId, exerciseId } = req.params;
+    try {
+      const record = await Exercise.findOne({ userId });
+      if (!record) return res.status(404).json({ error: 'No exercises found for user' });
+  
+      record.exercises = record.exercises.filter(ex => ex._id.toString() !== exerciseId);
+      await record.save();
+  
+      res.json({ message: 'Exercise deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete exercise' });
+    }
+  };
+
+module.exports = { addExercise, removeExercise, getDailyCalories, deleteExercise};

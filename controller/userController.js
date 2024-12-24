@@ -5,15 +5,28 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const register = async (req, res) => {
-  const { username, password } = req.body;
-  try {
-    const newUser = new User({ username, password });
-    await newUser.save();
-    res.status(201).json({ message: 'User registered successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to register user' });
-  }
-};
+    const { username, email, password } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+  
+    try {
+      const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+      if (existingUser) {
+        return res.status(400).json({ error: 'Username or email already exists' });
+      }
+  
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = new User({ username, email, password: hashedPassword });
+      await newUser.save();
+  
+      res.status(201).json({ message: 'User registered successfully' });
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({ error: 'Failed to register user' });
+    }
+  };
+  
 
 const login = async (req, res) => {
   const { username, password } = req.body;
@@ -31,4 +44,14 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+const deleteUser = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    await User.findByIdAndDelete(userId);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+};
+
+module.exports = { register, login, deleteUser };
